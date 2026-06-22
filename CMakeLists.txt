@@ -28,20 +28,29 @@ if(GIT_FOUND)
     OUTPUT_STRIP_TRAILING_WHITESPACE
     RESULT_VARIABLE ${PROJECT_NAME}_VERSION_RESULT
     ERROR_QUIET)
+  # Initialize to success; rev-list calls below overwrite this value.
+  set(${PROJECT_NAME}_VERSION_AHEAD_RESULT 0)
 
-  if(${PROJECT_NAME}_VERSION_RESULT EQUAL 0 AND NOT "${${PROJECT_NAME}_VERSION}" STREQUAL "")
+  if(${${PROJECT_NAME}_VERSION_RESULT} EQUAL 0)
     # How many commits since last tag
     execute_process(COMMAND ${GIT_EXECUTABLE} rev-list ${${PROJECT_NAME}_VERSION}..HEAD --count
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
       OUTPUT_VARIABLE ${PROJECT_NAME}_VERSION_AHEAD
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      RESULT_VARIABLE ${PROJECT_NAME}_VERSION_AHEAD_RESULT)
   else()
     # Repository has no tags. Fall back to an initial version and count all commits.
     set(${PROJECT_NAME}_VERSION "0.0.0")
     execute_process(COMMAND ${GIT_EXECUTABLE} rev-list HEAD --count
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
       OUTPUT_VARIABLE ${PROJECT_NAME}_VERSION_AHEAD
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      RESULT_VARIABLE ${PROJECT_NAME}_VERSION_AHEAD_RESULT)
+  endif()
+
+  # If commit counting fails or returns nothing, default to 0 commits ahead.
+  if(NOT ${${PROJECT_NAME}_VERSION_AHEAD_RESULT} EQUAL 0 OR "${${PROJECT_NAME}_VERSION_AHEAD}" STREQUAL "")
+    set(${PROJECT_NAME}_VERSION_AHEAD 0)
   endif()
 
   # Get current commit hash from git
@@ -56,7 +65,7 @@ if(GIT_FOUND)
   endif()
 
   # Set full project version string
-  if(NOT "${${PROJECT_NAME}_VERSION_AHEAD}" STREQUAL "0")
+  if(NOT ${${PROJECT_NAME}_VERSION_AHEAD} EQUAL 0)
     set(${PROJECT_NAME}_VERSION
       ${${PROJECT_NAME}_VERSION}+${${PROJECT_NAME}_VERSION_AHEAD}.${${PROJECT_NAME}_VERSION_HASH})
   endif()
