@@ -5,6 +5,7 @@
 #include "_reg_f3d.h"
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 
 /*
     This test file checks the behaviour of the reg_f3d -freshgrid option.
@@ -51,6 +52,12 @@ public:
         constexpr NiftiImage::dim_t dimSize = 16;
         reference = NiftiImage({ dimSize, dimSize, dimSize }, NIFTI_TYPE_FLOAT32);
         floating = NiftiImage({ dimSize, dimSize, dimSize }, NIFTI_TYPE_FLOAT32);
+        // reg_f3d::Initialise() logs the image filenames; give the in-memory test
+        // images a name (real images are always read from a file) so the logging
+        // does not stream a null pointer. strdup is used so nifti_image_free can
+        // safely release it.
+        reference->fname = strdup("reference");
+        floating->fname = strdup("floating");
     }
 
     // Build a coarse input grid holding a constant translation
